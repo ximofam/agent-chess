@@ -14,6 +14,7 @@ class Agent(ABC):
     def choose_move(self, board: 'Board') -> Optional['Move']:
         pass
 
+# Agent này sẽ chọn ngẫu nhiên 1 nước đi từ các nước đi hợp lệ
 class RandomAgent(Agent):
 
     def choose_move(self, board: 'Board') -> Optional['Move']:
@@ -25,7 +26,7 @@ class RandomAgent(Agent):
         return choice
 
 
-
+# Dùng giải thuật minimax với hàm đánh giá là đếm số lượng quân cờ rồi tính tổng điểm
 class MinimaxAgent(Agent):
 
     _piece_values = {
@@ -74,19 +75,12 @@ class MinimaxAgent(Agent):
         return score
 
     def _minimax(self, board: 'Board', depth: int, maximizing: bool) -> int:
-        if depth == 0:
-            return self.evaluate(board)
-
-        legal_moves = board.get_legal_moves()
-        if not legal_moves:
-            return self.evaluate(board)
-
-        if board.get_result():
+        if depth == 0 or board.is_game_over():
             return self.evaluate(board)
 
         if maximizing:
             max_eval = float("-inf")
-            for move in legal_moves:
+            for move in board.get_legal_moves():
                 board.push_move(move)
                 eval = self._minimax(board, depth - 1, False)
                 board.pop_move()
@@ -94,7 +88,7 @@ class MinimaxAgent(Agent):
             return max_eval
         else:
             min_eval = float("inf")
-            for move in legal_moves:
+            for move in board.get_legal_moves():
                 board.push_move(move)
                 eval = self._minimax(board, depth - 1, True)
                 board.pop_move()
