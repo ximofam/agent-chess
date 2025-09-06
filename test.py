@@ -6,29 +6,31 @@ if __name__ == "__main__":
     agent01 = RandomAgent("Ximofam", Color.WHITE)
     agent02 = AlphaBetaAgent("VIENTHUHAI", Color.BLACK)
 
+
     print(board)
+    print("====================")
 
-    moves = [
-        # Promotion sequence
-        'e2e4', 'd7d5',
-        'e4d5', 'c7c6',
-        'd5c6', 'b7b5',
-        'c6c7', 'b5b4',
-        'c7b8R'
-    ]
+    while True:
+        move = None
+        name = ""
+        if board.turn == agent01.color:
+            move = agent01.choose_move(board)
+            name = agent01.name
+        else:
+            move = agent02.choose_move(board)
+            name = agent02.name
 
-    while moves:
-        move = Move.from_uci(moves.pop(0))
-
-        if board.is_legal_move(move):
-            board.push_move(move)
-
-
-        print('================')
+        board.push_move(move)
         print(board)
+        print(f"{name} move: {move}")
+        print("====================")
+
+        result = board.get_result()
+        if result is not None:
+            print(result)
+            break
 
 
-    print([move for move in board.get_legal_moves() if move.from_pos == (2, 6)])
 
 
 

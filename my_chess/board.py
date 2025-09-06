@@ -280,43 +280,27 @@ class Board:
                 if dx == dy == 0:
                     continue
                 nx, ny = x + dx, y + dy
+                if not self.in_bounds(nx, ny):
+                    continue
                 target = self.piece_at(nx, ny)
-                if self.in_bounds(nx, ny) and (not target or target.color != color):
+                if target is None or target.color != color:
                     yield Move(pos, (nx, ny))
 
-        # 2. Xử lý nhập thành (castling)
+        # 2. Pseudo castling (chỉ check rook + ô trống, chưa check chiếu)
         piece = self.piece_at(x, y)
         if not piece or piece.has_moved:
-            return  # Vua đã di chuyển -> không thể nhập thành
+            return
 
-        rank = 0 if color == Color.WHITE else 7  # Hàng của quân mình
+        rank = 0 if color == Color.WHITE else 7
 
         # ---- Nhập thành ngắn (king-side) ----
         rook = self.piece_at(7, rank)
         if rook and rook.piece_type == PieceType.ROOK and not rook.has_moved:
-            # Kiểm tra các ô giữa vua và xe trống
             if all(self.piece_at(f, rank) is None for f in (5, 6)):
-                # Kiểm tra vua không bị chiếu khi đi qua các ô
-                if not self.is_check(color):
-                    self.push_move(Move((x, y), (5, rank)))  # giả lập đi qua ô f1/f8
-                    safe1 = not self.is_check(color)
-                    self.pop_move()
-                    self.push_move(Move((x, y), (6, rank)))  # giả lập đi tới ô g1/g8
-                    safe2 = not self.is_check(color)
-                    self.pop_move()
-                    if safe1 and safe2:
-                        yield Move((x, y), (6, rank), is_castling=True)
+                yield Move((x, y), (6, rank), is_castling=True)
 
         # ---- Nhập thành dài (queen-side) ----
         rook = self.piece_at(0, rank)
         if rook and rook.piece_type == PieceType.ROOK and not rook.has_moved:
             if all(self.piece_at(f, rank) is None for f in (1, 2, 3)):
-                if not self.is_check(color):
-                    self.push_move(Move((x, y), (3, rank)))  # giả lập đi qua ô d1/d8
-                    safe1 = not self.is_check(color)
-                    self.pop_move()
-                    self.push_move(Move((x, y), (2, rank)))  # giả lập đi tới ô c1/c8
-                    safe2 = not self.is_check(color)
-                    self.pop_move()
-                    if safe1 and safe2:
-                        yield Move((x, y), (2, rank), is_castling=True)
+                yield Move((x, y), (2, rank), is_castling=True)

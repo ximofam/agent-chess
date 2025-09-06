@@ -2,7 +2,8 @@ from abc import ABC, abstractmethod
 from random import randrange
 from typing import Optional
 
-from my_chess import PieceType, Color
+from heuristics import WIN_SCORE, DRAW_SCORE, evaluate
+from my_chess import Color
 
 
 class Agent(ABC):
@@ -16,7 +17,6 @@ class Agent(ABC):
 
 # Agent này sẽ chọn ngẫu nhiên 1 nước đi từ các nước đi hợp lệ
 class RandomAgent(Agent):
-
     def choose_move(self, board: 'Board') -> Optional['Move']:
         choice: Optional['Move'] = None
         for i, mv in enumerate(board.get_legal_moves(), start=1):
@@ -28,15 +28,6 @@ class RandomAgent(Agent):
 
 # Dùng giải thuật minimax với hàm đánh giá là đếm số lượng quân cờ rồi tính tổng điểm
 class MinimaxAgent(Agent):
-    _piece_values = {
-        PieceType.PAWN: 1,
-        PieceType.KNIGHT: 3,
-        PieceType.BISHOP: 3,
-        PieceType.ROOK: 5,
-        PieceType.QUEEN: 9,
-        PieceType.KING: 1000
-    }
-
     def __init__(self, name: str, color: 'Color', depth: int = 3):
         super().__init__(name, color)
         self.depth = depth
@@ -60,19 +51,13 @@ class MinimaxAgent(Agent):
 
         return best_move
 
-    def evaluate(self, board: 'Board') -> int:
-        score = 0
-        for file in range(8):
-            for rank in range(8):
-                piece = board.piece_at(file, rank)
-                if piece is not None:
-                    val = self._piece_values[piece.piece_type]
-                    score += val if piece.color == Color.WHITE else -val
-        return score
-
     def _minimax(self, board: 'Board', depth: int, maximizing: bool) -> int:
-        if depth == 0 or board.is_game_over():
-            return self.evaluate(board)
+        result = board.get_result()
+        if result is not None:
+            return WIN_SCORE if result == "WHITE_WIN" else -WIN_SCORE if result == "BLACK_WIN" else DRAW_SCORE
+
+        if depth == 0:
+            return evaluate(board)
 
         if maximizing:
             max_eval = float("-inf")
@@ -94,15 +79,6 @@ class MinimaxAgent(Agent):
 
 
 class AlphaBetaAgent(Agent):
-    _piece_values = {
-        PieceType.PAWN: 1,
-        PieceType.KNIGHT: 3,
-        PieceType.BISHOP: 3,
-        PieceType.ROOK: 5,
-        PieceType.QUEEN: 9,
-        PieceType.KING: 1000
-    }
-
     def __init__(self, name: str, color: 'Color', depth: int = 3):
         super().__init__(name, color)
         self.depth = depth
@@ -126,19 +102,13 @@ class AlphaBetaAgent(Agent):
 
         return best_move
 
-    def evaluate(self, board: 'Board') -> int:
-        score = 0
-        for file in range(8):
-            for rank in range(8):
-                piece = board.piece_at(file, rank)
-                if piece is not None:
-                    val = self._piece_values[piece.piece_type]
-                    score += val if piece.color == Color.WHITE else -val
-        return score
-
     def _minimax(self, board: 'Board', depth: int, alpha: float, beta: float, maximizing: bool) -> int:
-        if depth == 0 or board.is_game_over():
-            return self.evaluate(board)
+        result = board.get_result()
+        if result is not None:
+            return WIN_SCORE if result == "WHITE_WIN" else -WIN_SCORE if result == "BLACK_WIN" else DRAW_SCORE
+
+        if depth == 0:
+            return evaluate(board)
 
         if maximizing:
             max_eval = float("-inf")
