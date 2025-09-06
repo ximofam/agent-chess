@@ -40,7 +40,7 @@ class Board:
         rows.append('  ' + ' '.join('abcdefgh'))
         return '\n'.join(rows)
 
-
+    # Kiểm tra vị trí (file, rank) truyền vào có nằm trong bàn cờ không
     def in_bounds(self, file: int, rank: int) -> bool:
         return 0 <= file < 8 and 0 <= rank < 8
 
@@ -53,22 +53,6 @@ class Board:
 
     def is_legal_move(self, move: Move) -> bool:
         return move in self.get_legal_moves()
-
-    #def push_move(self, move: Move):
-        # # Lấy 2 quân cờ tại điểm bắt đầu và điểm đến
-        # piece = self.piece_at(*move.from_pos)
-        # target = self.piece_at(*move.to_pos)
-        #
-        # # Di chuyển quân cờ
-        # self.set_piece_at(move.to_pos, piece)
-        # self.set_piece_at(move.from_pos, None)
-        #
-        # # Set quân cờ di chuyển và quân bị ăn và color vào move xong lưu lại vào stack
-        # move.piece = piece
-        # move.captured = target
-        # self._stack_move.append(move)
-        #
-        # self.turn = opposite(self.turn)
 
     def push_move(self, move: Move):
 
@@ -101,6 +85,7 @@ class Board:
 
         move.piece = piece
         move.captured = target
+        move.piece_was_moved_before = piece.has_moved
         self._stack_move.append(move)
 
         if piece:
@@ -113,6 +98,10 @@ class Board:
             return None
         # Lấy move cuối cùng
         move = self._stack_move.pop()
+
+        # Undo trạng thái đã di chuyển
+        if move.piece:
+            move.piece.has_moved = move.piece_was_moved_before  # cần lưu giá trị trước khi push
 
         # Undo nhập thành
         if move.is_castling:
@@ -139,6 +128,7 @@ class Board:
         return move
 
 
+    # Tìm kiếm vị trí của vua
     def find_king(self, color: Color) -> Tuple[int, int] | None:
         for file in range(8):
             for rank in range(8):
@@ -149,6 +139,7 @@ class Board:
         return None
 
 
+    # Kiểm tra vua màu trắng hoặc đen mà bạn truyền vào có bị chiếu không
     def is_check(self, color: Color) -> bool:
         king_pos = self.find_king(color)
 
@@ -159,6 +150,7 @@ class Board:
         return False
 
 
+    # Kiểm tra chiều hết có nghĩa là vua bị chiếu và không còn nước đi phù hợp
     def is_checkmate(self) -> bool:
         if not self.is_check(self.turn):
             return False
@@ -202,9 +194,11 @@ class Board:
         return None
 
 
+    # Lấy nước đi phù hợp của người chơi hiện tại
     def get_legal_moves(self) -> Iterator[Move]:
         yield from self._get_legal_moves_of(self.turn)
 
+    # Hàm này là private có thể lấy các nước đi phù hợp của các quân đen hoặc trắng mà bạn truyền vào
     def _get_legal_moves_of(self, color: Color) -> Iterator[Move]:
         dispatch = {
             PieceType.PAWN: self._get_pawn_moves,
@@ -220,6 +214,7 @@ class Board:
                 if piece and piece.color == color:
                     yield from dispatch[piece.piece_type]((file, rank), color)
 
+    # Lấy cái nước đi trượt theo các hướng di chuyển mà bạn truyền vào như: đi thẳng, đi ngang, đi chéo
     def _slide_moves(self, pos: Tuple[int,int], color: Color, directions: list[Tuple[int,int]]) -> Iterator[Move]:
         x, y = pos
         for dx, dy in directions:
@@ -234,6 +229,7 @@ class Board:
                     break
                 nx, ny = nx + dx, ny + dy
 
+    # Lấy các nước đi phù hợp của quân tốt
     def _get_pawn_moves(self, pos: Tuple[int,int], color: Color) -> Iterator[Move]:
         x, y = pos
         direction = 1 if color == Color.WHITE else -1
@@ -265,6 +261,7 @@ class Board:
                 else:
                     yield Move(pos, (nx, ny))
 
+    # Lấy nước đi phù hợp của quân mã
     def _get_knight_moves(self, pos: Tuple[int,int], color: Color) -> Iterator[Move]:
         x, y = pos
         for dx, dy in [(1,2),(2,1),(2,-1),(1,-2),(-1,-2),(-2,-1),(-2,1),(-1,2)]:
@@ -273,8 +270,11 @@ class Board:
             if self.in_bounds(nx, ny) and (not target or target.color != color):
                 yield Move(pos, (nx, ny))
 
-    def _get_king_moves(self, pos: Tuple[int,int], color: Color) -> Iterator[Move]:
+    # Lấy tất cả nước đi hợp lệ của quân vua tại vị trí pos
+    def _get_king_moves(self, pos: Tuple[int, int], color: Color) -> Iterator[Move]:
         x, y = pos
+
+        # 1. Đi 1 ô theo tất cả các hướng
         for dx in (-1, 0, 1):
             for dy in (-1, 0, 1):
                 if dx == dy == 0:
@@ -284,38 +284,38 @@ class Board:
                 if self.in_bounds(nx, ny) and (not target or target.color != color):
                     yield Move(pos, (nx, ny))
 
-        # ---- Nhập thành ----
+        # 2. Xử lý nhập thành (castling)
         piece = self.piece_at(x, y)
         if not piece or piece.has_moved:
-            return  # Vua đã di chuyển thì không nhập thành được
+            return  # Vua đã di chuyển -> không thể nhập thành
 
-        # Vị trí xe phụ thuộc màu
-        rank = 0 if color == Color.WHITE else 7
+        rank = 0 if color == Color.WHITE else 7  # Hàng của quân mình
 
-        # Nhập thành ngắn (king-side)
+        # ---- Nhập thành ngắn (king-side) ----
         rook = self.piece_at(7, rank)
         if rook and rook.piece_type == PieceType.ROOK and not rook.has_moved:
+            # Kiểm tra các ô giữa vua và xe trống
             if all(self.piece_at(f, rank) is None for f in (5, 6)):
+                # Kiểm tra vua không bị chiếu khi đi qua các ô
                 if not self.is_check(color):
-                    # giả lập đi qua ô 5,6
-                    self.push_move(Move((x, y), (5, rank)))
+                    self.push_move(Move((x, y), (5, rank)))  # giả lập đi qua ô f1/f8
                     safe1 = not self.is_check(color)
                     self.pop_move()
-                    self.push_move(Move((x, y), (6, rank)))
+                    self.push_move(Move((x, y), (6, rank)))  # giả lập đi tới ô g1/g8
                     safe2 = not self.is_check(color)
                     self.pop_move()
                     if safe1 and safe2:
                         yield Move((x, y), (6, rank), is_castling=True)
 
-        # Nhập thành dài (queen-side)
+        # ---- Nhập thành dài (queen-side) ----
         rook = self.piece_at(0, rank)
         if rook and rook.piece_type == PieceType.ROOK and not rook.has_moved:
             if all(self.piece_at(f, rank) is None for f in (1, 2, 3)):
                 if not self.is_check(color):
-                    self.push_move(Move((x, y), (3, rank)))
+                    self.push_move(Move((x, y), (3, rank)))  # giả lập đi qua ô d1/d8
                     safe1 = not self.is_check(color)
                     self.pop_move()
-                    self.push_move(Move((x, y), (2, rank)))
+                    self.push_move(Move((x, y), (2, rank)))  # giả lập đi tới ô c1/c8
                     safe2 = not self.is_check(color)
                     self.pop_move()
                     if safe1 and safe2:

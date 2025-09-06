@@ -1,10 +1,10 @@
-from agents import RandomAgent, MinimaxAgent, AlphabetaAgent
+from agents import RandomAgent, MinimaxAgent, AlphaBetaAgent
 from my_chess import Board, Color, Move
 
 if __name__ == "__main__":
     board = Board()
     agent01 = RandomAgent("Ximofam", Color.WHITE)
-    agent02 = AlphabetaAgent("VIENTHUHAI", Color.BLACK)
+    agent02 = AlphaBetaAgent("VIENTHUHAI", Color.BLACK)
 
     print(board)
 

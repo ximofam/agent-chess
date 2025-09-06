@@ -19,6 +19,7 @@ class Move:
         self.piece = piece
         self.captured = captured
         self.is_castling = is_castling
+        self.piece_was_moved_before = False
 
     def to_uci(self) -> str:
         res = pos_to_square(*self.from_pos) + pos_to_square(*self.to_pos)

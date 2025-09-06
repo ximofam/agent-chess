@@ -295,6 +295,7 @@ def handle_mouse(pos, button):
                     board.pop_move()
                     if ok:
                         legal_moves_cache.append(mv)
+            print(legal_moves_cache)
     else:
         # attempt to move selected -> clicked square
         dest = (file, rank)

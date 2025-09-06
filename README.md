@@ -1,9 +1,7 @@
 # Agent chess
 
-##  Giới thiệu dự án
-
+##  Cấu trúc dự án
 Dự án `agent-chess` được thiết kế như sau:
-
 - **`images/`**: Chứa ảnh các quân cờ
 - **`my_chess/`**: Thư mục chứa logic xử lý trò chơi cờ.
 - **`agents.py`**: Định nghĩa các agent chơi cờ như Alpha-Beta Agent, Minimax Agent, v.v.
@@ -17,4 +15,5 @@ Dự án `agent-chess` được thiết kế như sau:
    Mở terminal/cmd và chạy:
    ```bash
    pip install pygame
+   
 2. **Chạy hàm main.py**
