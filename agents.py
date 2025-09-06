@@ -28,7 +28,6 @@ class RandomAgent(Agent):
 
 # Dùng giải thuật minimax với hàm đánh giá là đếm số lượng quân cờ rồi tính tổng điểm
 class MinimaxAgent(Agent):
-
     _piece_values = {
         PieceType.PAWN: 1,
         PieceType.KNIGHT: 3,
@@ -44,24 +43,21 @@ class MinimaxAgent(Agent):
 
     def choose_move(self, board: 'Board') -> Optional['Move']:
         best_move = None
-        if self.color == Color.WHITE:
-            best_val = float("-inf")
-            for move in board.get_legal_moves():
-                board.push_move(move)
-                eval = self._minimax(board, self.depth - 1, False)
-                board.pop_move()
-                if eval > best_val:
-                    best_val = eval
-                    best_move = move
-        else:  # Black (minimizing)
-            best_val = float("inf")
-            for move in board.get_legal_moves():
-                board.push_move(move)
-                eval = self._minimax(board, self.depth - 1, True)
-                board.pop_move()
-                if eval < best_val:
-                    best_val = eval
-                    best_move = move
+        best_val = float("-inf") if self.color == Color.WHITE else float("inf")
+        maximizing = self.color == Color.WHITE
+
+        for move in board.get_legal_moves():
+            board.push_move(move)
+            eval = self._minimax(board, self.depth - 1, not maximizing)
+            board.pop_move()
+
+            if maximizing and eval > best_val:
+                best_val = eval
+                best_move = move
+            elif not maximizing and eval < best_val:
+                best_val = eval
+                best_move = move
+
         return best_move
 
     def evaluate(self, board: 'Board') -> int:
@@ -93,4 +89,76 @@ class MinimaxAgent(Agent):
                 eval = self._minimax(board, depth - 1, True)
                 board.pop_move()
                 min_eval = min(min_eval, eval)
+            return min_eval
+
+
+
+class AlphaBetaAgent(Agent):
+    _piece_values = {
+        PieceType.PAWN: 1,
+        PieceType.KNIGHT: 3,
+        PieceType.BISHOP: 3,
+        PieceType.ROOK: 5,
+        PieceType.QUEEN: 9,
+        PieceType.KING: 1000
+    }
+
+    def __init__(self, name: str, color: 'Color', depth: int = 3):
+        super().__init__(name, color)
+        self.depth = depth
+
+    def choose_move(self, board: 'Board') -> Optional['Move']:
+        best_move = None
+        best_val = float("-inf") if self.color == Color.WHITE else float("inf")
+        maximizing = self.color == Color.WHITE
+
+        for move in board.get_legal_moves():
+            board.push_move(move)
+            eval = self._minimax(board, self.depth - 1, float("-inf"), float("inf"), not maximizing)
+            board.pop_move()
+
+            if maximizing and eval > best_val:
+                best_val = eval
+                best_move = move
+            elif not maximizing and eval < best_val:
+                best_val = eval
+                best_move = move
+
+        return best_move
+
+    def evaluate(self, board: 'Board') -> int:
+        score = 0
+        for file in range(8):
+            for rank in range(8):
+                piece = board.piece_at(file, rank)
+                if piece is not None:
+                    val = self._piece_values[piece.piece_type]
+                    score += val if piece.color == Color.WHITE else -val
+        return score
+
+    def _minimax(self, board: 'Board', depth: int, alpha: float, beta: float, maximizing: bool) -> int:
+        if depth == 0 or board.is_game_over():
+            return self.evaluate(board)
+
+        if maximizing:
+            max_eval = float("-inf")
+            for move in board.get_legal_moves():
+                board.push_move(move)
+                eval = self._minimax(board, depth - 1, alpha, beta, False)
+                board.pop_move()
+                max_eval = max(max_eval, eval)
+                alpha = max(alpha, eval)
+                if beta <= alpha:
+                    break
+            return max_eval
+        else:
+            min_eval = float("inf")
+            for move in board.get_legal_moves():
+                board.push_move(move)
+                eval = self._minimax(board, depth - 1, alpha, beta, True)
+                board.pop_move()
+                min_eval = min(min_eval, eval)
+                beta = min(beta, eval)
+                if beta <= alpha:
+                    break
             return min_eval

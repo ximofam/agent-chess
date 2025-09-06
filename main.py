@@ -13,7 +13,7 @@ from typing import Optional, Tuple, Dict
 try:
     from my_chess import Board, Color, PieceType
     from my_chess.piece import PIECE_TO_SYMBOL
-    from agents import RandomAgent, MinimaxAgent
+    from agents import RandomAgent, MinimaxAgent, AlphaBetaAgent
 except Exception as e:
     print("Import error:", e)
     print("Hãy đảm bảo package my_chess và file agents.py có thể import được.")
@@ -50,6 +50,7 @@ FONT_SM = pygame.font.SysFont(None, 16)
 AGENTS = {
     "random": RandomAgent,
     "minimax": MinimaxAgent,
+    "alpha-beta-pruning": AlphaBetaAgent
 }
 
 # ---------------- Globals (game state) ----------------
@@ -126,6 +127,8 @@ def new_game(mode: str = "minimax"):
     # create agent with different params if needed
     if AgentClass is MinimaxAgent:
         agent = AgentClass("Vien Pham", Color.BLACK, depth=3)
+    elif AgentClass is AlphaBetaAgent:
+        agent = AgentClass("Bot", Color.BLACK, depth=3)
     else:
         agent = AgentClass("Ximofam", Color.BLACK)
     agent_mode = mode
@@ -233,7 +236,8 @@ def draw_ui(bd: Board, agent_obj, mode: str, last_ai_sec: float):
         "U : undo (undo 2 ply)",
         "R : restart",
         "1 : random agent",
-        "2 : minimax agent"
+        "2 : minimax agent",
+        "3 : alpha-beta pruning agent"
     ]
     for c in controls:
         screen.blit(FONT_SM.render(c, True, TEXT_COLOR), (x0, y))
@@ -259,6 +263,9 @@ def handle_key(event):
         new_game(agent_mode)
     elif event.key == pygame.K_2:
         agent_mode = "minimax"
+        new_game(agent_mode)
+    elif event.key == pygame.K_3:
+        agent_mode = "alpha-beta-pruning"
         new_game(agent_mode)
 
 
