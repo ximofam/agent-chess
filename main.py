@@ -24,7 +24,7 @@ BOARD_SIZE = 640           # pixel size of board (square)
 UI_WIDTH = 220             # width of UI panel on the right
 WIDTH, HEIGHT = BOARD_SIZE + UI_WIDTH, BOARD_SIZE
 SQUARE_SIZE = BOARD_SIZE // 8
-FPS = 60
+FPS = 24
 
 # Colors
 LIGHT_SQ = (240, 217, 181)
@@ -59,7 +59,7 @@ SCALED_CACHE: Dict[str, pygame.Surface] = {}       # cached scaled images to SQU
 board: Board
 agent = None
 HUMAN_COLOR = Color.WHITE
-agent_mode = "minimax"
+agent_mode = "alpha-beta-pruning"
 selected_sq = None
 legal_moves_cache = []
 last_ai_time = 0.0
@@ -119,18 +119,18 @@ def get_scaled_image(symbol: str):
 
 
 # ---------------- Game functions ----------------
-def new_game(mode: str = "minimax"):
+def new_game(mode: str = "alpha-beta-pruning"):
     global board, agent, HUMAN_COLOR, agent_mode, selected_sq, legal_moves_cache, last_ai_time
     board = Board()
     HUMAN_COLOR = Color.WHITE
     AgentClass = AGENTS.get(mode, MinimaxAgent)
     # create agent with different params if needed
     if AgentClass is MinimaxAgent:
-        agent = AgentClass("Vien Pham", Color.BLACK, depth=3)
-    elif AgentClass is AlphaBetaAgent:
-        agent = AgentClass("Bot", Color.BLACK, depth=3)
-    else:
         agent = AgentClass("Ximofam", Color.BLACK)
+    elif AgentClass is AlphaBetaAgent:
+        agent = AgentClass("Vien Pham", Color.BLACK)
+    else:
+        agent = AgentClass("Bot", Color.BLACK)
     agent_mode = mode
     selected_sq = None
     legal_moves_cache = []
@@ -295,7 +295,6 @@ def handle_mouse(pos, button):
                     board.pop_move()
                     if ok:
                         legal_moves_cache.append(mv)
-            print(legal_moves_cache)
     else:
         # attempt to move selected -> clicked square
         dest = (file, rank)
@@ -342,6 +341,10 @@ def main_loop():
     running = True
     while running:
         clock.tick(FPS)
+
+        # AI move (synchronous simple)
+        ai_move_if_needed()
+
         for ev in pygame.event.get():
             if ev.type == pygame.QUIT:
                 running = False
@@ -350,8 +353,6 @@ def main_loop():
             elif ev.type == pygame.MOUSEBUTTONDOWN:
                 handle_mouse(ev.pos, ev.button)
 
-        # AI move (synchronous simple)
-        ai_move_if_needed()
 
         # draw
         screen.fill((0, 0, 0))

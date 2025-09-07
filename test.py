@@ -3,8 +3,8 @@ from my_chess import Board, Color, Move
 
 if __name__ == "__main__":
     board = Board()
-    agent01 = RandomAgent("Ximofam", Color.WHITE)
-    agent02 = AlphaBetaAgent("VIENTHUHAI", Color.BLACK)
+    agent01 = RandomAgent("Ximofam", Color.BLACK)
+    agent02 = AlphaBetaAgent("VIENTHUHAI", Color.WHITE)
 
 
     print(board)
