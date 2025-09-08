@@ -126,7 +126,7 @@ def new_game(mode: str = "alpha-beta-pruning"):
     AgentClass = AGENTS.get(mode, MinimaxAgent)
     # create agent with different params if needed
     if AgentClass is MinimaxAgent:
-        agent = AgentClass("Ximofam", Color.BLACK)
+        agent = AgentClass("Hung Vu", Color.BLACK)
     elif AgentClass is AlphaBetaAgent:
         agent = AgentClass("Vien Pham", Color.BLACK)
     else:

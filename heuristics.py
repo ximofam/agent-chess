@@ -94,18 +94,28 @@ PST = {
 }
 
 # --- Bonus kiểm soát trung tâm ---
-CENTER_SQUARES = {(3,3), (3,4), (4,3), (4,4)}  # d4, e4, d5, e5
+CENTER_SQUARES = {(3, 3), (4, 3), (3, 4), (4, 4)}  # d4, e4, d5, e5
+EXTENDED_CENTER = {
+    (2, 2), (3, 2), (4, 2), (5, 2),   # c3, d3, e3, f3
+    (2, 3), (5, 3),                   # c4, f4
+    (2, 4), (5, 4),                   # c5, f5
+    (2, 5), (3, 5), (4, 5), (5, 5)    # c6, d6, e6, f6
+}
+
 
 
 def pst_value(piece, file, rank) -> int:
     table = PST.get(piece.piece_type)
-    idx = (rank * 8 + file) if piece.color == Color.WHITE else ((7 - rank) * 8 + file)
+    if piece.color == Color.WHITE:
+        idx = rank * 8 + file
+    else:
+        idx = (7 - rank) * 8 + file
     return table[idx]
 
 
 
 def king_safety_value(pos, color: Color, pawns) -> int: # pieces là ds (piece, (file, rank))
-    if pos == None:
+    if pos is None:
         return -100000
 
     kf, kr = pos
@@ -132,8 +142,6 @@ def king_safety_value(pos, color: Color, pawns) -> int: # pieces là ds (piece, 
     return score
 
 
-
-
 def evaluate(board: 'Board') -> int:
     score = 0
 
@@ -143,8 +151,8 @@ def evaluate(board: 'Board') -> int:
     white_pawn_files = set()
     black_pawn_files = set()
 
-    white_pawns = []
-    black_pawns = []
+    white_pawns = set()
+    black_pawns = set()
 
     for file in range(8):
         for rank in range(8):
@@ -160,6 +168,14 @@ def evaluate(board: 'Board') -> int:
             pst = pst_value(p, file, rank)
             score += pst if is_white else -pst
 
+            # Nếu quân đứng trên ô trung tâm tuyệt đối
+            if (file, rank) in CENTER_SQUARES:
+                score += 20 if is_white else -20
+
+            # Nếu quân đứng trên trung tâm mở rộng
+            elif (file, rank) in EXTENDED_CENTER:
+                score += 10 if is_white else -10
+
             if p.piece_type == PieceType.KING:
                 if is_white:
                     white_king = (file, rank)
@@ -172,15 +188,15 @@ def evaluate(board: 'Board') -> int:
 
             # Nếu tốt chồng thì bị trừ 10 điểm
             if is_white:
-                white_pawns.append((file, rank))
+                white_pawns.add((file, rank))
                 if file in white_pawn_files:
-                    score -= 10
+                    score -= 10 # Phạt trắng (Tức có lợi cho đen)
                 else:
                     white_pawn_files.add(file)
             else:
-                black_pawns.append((file, rank))
+                black_pawns.add((file, rank))
                 if file in black_pawn_files:
-                    score += 10
+                    score += 10 # Phạt đen (Tức có lợi cho trắng)
                 else:
                     black_pawn_files.add(file)
 
@@ -188,11 +204,11 @@ def evaluate(board: 'Board') -> int:
     # Nếu bị cô lập thì trừ 15 điểm
     for file, _ in white_pawns:
         if (file - 1 not in white_pawn_files) and (file + 1 not in white_pawn_files):
-            score -= 15
+            score -= 15 # Phạt trắng (Tức có lợi cho đen)
 
     for file, _ in black_pawns:
         if (file - 1 not in black_pawn_files) and (file + 1 not in black_pawn_files):
-            score += 15
+            score += 15 # Phạt đen (Tức có lợi cho trắng)
 
     score += king_safety_value(white_king, Color.WHITE, white_pawns) - \
             king_safety_value(black_king, Color.BLACK, black_pawns)
