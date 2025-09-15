@@ -26,7 +26,6 @@ class RandomAgent(Agent):
         return choice
 
 
-# Dùng giải thuật minimax với hàm đánh giá là đếm số lượng quân cờ rồi tính tổng điểm
 class MinimaxAgent(Agent):
     def __init__(self, name: str, color: 'Color', depth: int = 3):
         super().__init__(name, color)
@@ -39,7 +38,7 @@ class MinimaxAgent(Agent):
 
         for move in board.get_legal_moves():
             board.push_move(move)
-            eval = self._minimax(board, self.depth - 1, not maximizing)
+            eval = minimax(board, self.depth - 1, not maximizing)
             board.pop_move()
 
             if maximizing and eval > best_val:
@@ -50,31 +49,6 @@ class MinimaxAgent(Agent):
                 best_move = move
 
         return best_move
-
-    def _minimax(self, board: 'Board', depth: int, maximizing: bool) -> int:
-        result = board.get_result()
-        if result is not None:
-            return WIN_SCORE if result == "WHITE_WIN" else -WIN_SCORE if result == "BLACK_WIN" else DRAW_SCORE
-
-        if depth == 0:
-            return evaluate(board)
-
-        if maximizing:
-            max_eval = float("-inf")
-            for move in board.get_legal_moves():
-                board.push_move(move)
-                eval = self._minimax(board, depth - 1, False)
-                board.pop_move()
-                max_eval = max(max_eval, eval)
-            return max_eval
-        else:
-            min_eval = float("inf")
-            for move in board.get_legal_moves():
-                board.push_move(move)
-                eval = self._minimax(board, depth - 1, True)
-                board.pop_move()
-                min_eval = min(min_eval, eval)
-            return min_eval
 
 
 
@@ -90,7 +64,7 @@ class AlphaBetaAgent(Agent):
 
         for move in board.get_legal_moves():
             board.push_move(move)
-            eval = self._minimax(board, self.depth - 1, float("-inf"), float("inf"), not maximizing)
+            eval = alpha_beta(board, self.depth - 1, float("-inf"), float("inf"), not maximizing)
             board.pop_move()
 
             if maximizing and eval > best_val:
@@ -102,33 +76,62 @@ class AlphaBetaAgent(Agent):
 
         return best_move
 
-    def _minimax(self, board: 'Board', depth: int, alpha: float, beta: float, maximizing: bool) -> int:
-        result = board.get_result()
-        if result is not None:
-            return WIN_SCORE if result == "WHITE_WIN" else -WIN_SCORE if result == "BLACK_WIN" else DRAW_SCORE
 
-        if depth == 0:
-            return evaluate(board)
 
-        if maximizing:
-            max_eval = float("-inf")
-            for move in board.get_legal_moves():
-                board.push_move(move)
-                eval = self._minimax(board, depth - 1, alpha, beta, False)
-                board.pop_move()
-                max_eval = max(max_eval, eval)
-                alpha = max(alpha, eval)
-                if beta <= alpha:
-                    break
-            return max_eval
-        else:
-            min_eval = float("inf")
-            for move in board.get_legal_moves():
-                board.push_move(move)
-                eval = self._minimax(board, depth - 1, alpha, beta, True)
-                board.pop_move()
-                min_eval = min(min_eval, eval)
-                beta = min(beta, eval)
-                if beta <= alpha:
-                    break
-            return min_eval
+def minimax(board, depth, maximizing) -> int:
+    # Nếu đạt độ sâu giới hạn hoặc ván cờ đã kết thúc (chiếu hết, hòa, v.v.)
+    # thì trả về giá trị đánh giá của bàn cờ hiện tại
+    if depth == 0 or board.is_game_over():
+        return evaluate(board)
+
+    if maximizing:
+        # Người chơi MAX cố gắng tối đa hóa giá trị
+        max_eval = float("-inf")
+        for move in board.get_legal_moves():  # Duyệt tất cả các nước đi hợp lệ
+            board.push_move(move)            # Thực hiện nước đi
+            eval = minimax(board, depth - 1, False)  # Đệ quy sang lượt MIN
+            board.pop_move()                 # Hoàn tác nước đi để thử nước khác
+            max_eval = max(max_eval, eval)   # Chọn giá trị lớn nhất trong các nước đi
+        return max_eval
+    else:
+        # Người chơi MIN cố gắng tối thiểu hóa giá trị
+        min_eval = float("inf")
+        for move in board.get_legal_moves():  # Duyệt tất cả các nước đi hợp lệ
+            board.push_move(move)             # Thực hiện nước đi
+            eval = minimax(board, depth - 1, True)  # Đệ quy sang lượt MAX
+            board.pop_move()                  # Hoàn tác nước đi
+            min_eval = min(min_eval, eval)    # Chọn giá trị nhỏ nhất trong các nước đi
+        return min_eval
+
+
+def alpha_beta(board, depth, alpha, beta, maximizing) -> int:
+    # Nếu đạt độ sâu giới hạn hoặc ván cờ đã kết thúc (chiếu hết, hòa, v.v.)
+    # thì trả về giá trị đánh giá của bàn cờ hiện tại
+    if depth == 0 or board.is_game_over():
+        return evaluate(board)
+
+    if maximizing:
+        # Người chơi MAX muốn tối đa hóa giá trị
+        max_eval = float("-inf")
+        for move in board.get_legal_moves():  # Duyệt tất cả các nước đi hợp lệ
+            board.push_move(move)  # Thực hiện nước đi
+            eval = alpha_beta(board, depth - 1, alpha, beta, False)  # Đệ quy sang lượt MIN
+            board.pop_move()  # Hoàn tác nước đi
+            max_eval = max(max_eval, eval)  # Cập nhật giá trị lớn nhất
+            alpha = max(alpha, eval)  # Cập nhật ngưỡng alpha (giá trị tốt nhất của MAX)
+            if beta <= alpha: # Nếu alpha >= beta thì cắt tỉa (không cần xét thêm các nhánh khác)
+                break
+        return max_eval
+
+    else:
+        # Người chơi MIN muốn tối thiểu hóa giá trị
+        min_eval = float("inf")
+        for move in board.get_legal_moves():  # Duyệt tất cả các nước đi hợp lệ
+            board.push_move(move)  # Thực hiện nước đi
+            eval = alpha_beta(board, depth - 1, alpha, beta, True)  # Đệ quy sang lượt MAX
+            board.pop_move()  # Hoàn tác nước đi
+            min_eval = min(min_eval, eval)  # Cập nhật giá trị nhỏ nhất
+            beta = min(beta, eval)  # Cập nhật ngưỡng beta (giá trị tốt nhất của MIN)
+            if beta <= alpha:  # Nếu beta <= alpha thì cắt tỉa (không cần xét thêm các nhánh khác)
+                break
+        return min_eval
