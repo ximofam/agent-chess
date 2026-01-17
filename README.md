@@ -1,4 +1,4 @@
-# Agent chess
+A chess-playing agent implemented using the Minimax algorithm with Alpha–Beta pruning optimization.
 
 ---
 ## ♟️ Giới thiệu:
